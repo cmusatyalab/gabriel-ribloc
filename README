@@ -1,0 +1,11 @@
+current model is bone and gauge
+
+bone-gauge-grp-brp-frp-tg-gd-sbv-sa-saf-dh-gn-bn-fn-gnb
+objects:
+bone,gauge,grp,brp,frp,tg,gd,sbv,sa,saf,dh,gn,bn,fn,gnb
+
+bone-gauge-grp-brp-frp-tg-sbv-sa-saf-gd-fd-bd-dh-gn-bn-fn-gnb
+objects:
+bone,gauge,grp,brp,frp,tg,sbv,sa,saf,gd,fd,bd,dh,gn,bn,fn,gnb
+
+The tg is better recognized when both "demo" side are on top
