@@ -112,7 +112,7 @@ def detect_object(img):
         # print 'dets: {}'.format(dets)
 
         # visualize detected results
-        img = zc.vis_detections(img, dets, config.LABELS, thresh = CONF_THRESH)
+#        img = zc.vis_detections(img, dets, config.LABELS, thresh = CONF_THRESH)
 
         # combine with previous results (for other classes)
         if result is None:

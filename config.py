@@ -51,8 +51,9 @@ DISPLAY_LIST_TASK = ['input', 'object', 'instruction']
 # Used for cvWaitKey
 DISPLAY_WAIT_TIME = 1 if IS_STREAMING else 500
 
-ROTATE_IMAGE = True
+ROTATE_IMAGE = False
 RESIZE_IMAGE = False
+VISUALIZE_ALL = False
 # The objects(states) which can be detected
 # LABELS = [
 # 'tg',
