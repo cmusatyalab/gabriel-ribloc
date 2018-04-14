@@ -3,7 +3,8 @@
 set -e
 
 function die { echo $1; exit 42; }
-
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+echo "working directory $DIR"
 # Dependency checks
 # source torch if user indicates it's not activated by default
 if [ -z ${GABRIELPATH+x} ]
@@ -21,11 +22,11 @@ sleep 5
 ./gabriel-ucomm -s 127.0.0.1:8021 &> /tmp/gabriel-ucomm.log &
 sleep 5
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 if pgrep -f "gabriel-ucomm" > /dev/null
 then
     cd $DIR
-    ./ribloc
+    ./ribloc -p
 fi
 
 wait
