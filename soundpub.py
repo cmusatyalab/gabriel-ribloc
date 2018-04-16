@@ -1,8 +1,10 @@
 #! /usr/bin/env python
-import zmq
-import random
-import sys
+from __future__ import print_function
+
 import time
+
+import zmq
+
 
 class SoundPub(object):
     def __init__(self, port=13000):
@@ -10,10 +12,11 @@ class SoundPub(object):
         context = zmq.Context()
         self.socket = context.socket(zmq.PUB)
         self.socket.bind("tcp://eth2:%s" % port)
-        print 'sound publish server initialized: {}'.format(self.socket)
+        print('sound publish server initialized: {}'.format(self.socket))
 
     def pub(self, msg, topic=100):
         self.socket.send("%d %s" % (topic, msg))
+
 
 if __name__ == '__main__':
     tPub = SoundPub()
@@ -21,4 +24,3 @@ if __name__ == '__main__':
     while True:
         tPub.pub('put the bone on the table.')
         time.sleep(1)
-

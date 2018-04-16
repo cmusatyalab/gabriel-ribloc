@@ -3,7 +3,7 @@
 # Cloudlet Infrastructure for Mobile Computing
 #   - Task Assistance
 #
-#   Author: Zhuo Chen <zhuoc@cs.cmu.edu>
+#   Author: Zhuo Chen <zhuoc@cs.cmu.edu>, Junjue Wang <junjuew@cs.cmu.edu>
 #
 #   Copyright (C) 2011-2013 Carnegie Mellon University
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,6 @@ IS_STREAMING = True
 RECOGNIZE_ONLY = False
 
 # Port for communication between proxy and task server
-#TASK_SERVER_IP = "128.2.213.185"
 TASK_SERVER_IP = "128.2.211.75"
 TASK_SERVER_PORT = 2722
 
@@ -54,17 +53,10 @@ DISPLAY_WAIT_TIME = 1 if IS_STREAMING else 500
 ROTATE_IMAGE = False
 RESIZE_IMAGE = False
 VISUALIZE_ALL = False
-# The objects(states) which can be detected
-# LABELS = [
-# 'tg',
-# 'gd',
-# 'gauge',
-# 'grp',
-# 'bone'
-#     ]
+
 with open('model/labels.txt', 'r') as f:
-    content=f.read().splitlines()
-    LABELS=content
+    content = f.read().splitlines()
+    LABELS = content
 
 
 def setup(is_streaming):
@@ -79,4 +71,3 @@ def setup(is_streaming):
             DISPLAY_LIST = DISPLAY_LIST_TASK
     DISPLAY_WAIT_TIME = 1 if IS_STREAMING else 500
     SAVE_IMAGE = not IS_STREAMING
-

@@ -20,9 +20,9 @@
 #
 
 import matplotlib
+
 matplotlib.use('Agg')
 
-import cv2
 import json
 import numpy as np
 import os
@@ -33,7 +33,6 @@ import fnmatch
 # faster rcnn
 faster_rcnn_root = os.getenv('FASTER_RCNN_ROOT', '.')
 sys.path.append(os.path.join(faster_rcnn_root, "tools"))
-import _init_paths # this is necessary
 from fast_rcnn.config import cfg as faster_rcnn_config
 from fast_rcnn.test import im_detect
 from fast_rcnn.nms_wrapper import nms
@@ -47,7 +46,6 @@ import zhuocv as zc
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 
-
 # initialize caffe module
 faster_rcnn_config.TEST.HAS_RPN = True  # Use RPN for proposals
 
@@ -57,7 +55,7 @@ for fname in os.listdir('model'):
     elif fnmatch.fnmatch(fname, '*.pt'):
         prototxt = os.path.join('model', fname)
     elif fnmatch.fnmatch(fname, '*.caffemodel'):
-        caffemodel= os.path.join('model', fname)
+        caffemodel = os.path.join('model', fname)
 
 if not os.path.isfile(caffemodel):
     raise IOError(('{:s} not found.').format(caffemodel))
@@ -70,14 +68,12 @@ if config.USE_GPU:
 else:
     caffe.set_mode_cpu()
 
-
 net = caffe.Net(prototxt, caffemodel, caffe.TEST)
 
 # Warmup on a dummy image
 img = 128 * np.ones((300, 500, 3), dtype=np.uint8)
 for i in xrange(2):
-    _, _= im_detect(net, img)
-print 'caffe net has been initilized'
+    _, _ = im_detect(net, img)
 
 
 # img will be modified in this function
@@ -90,8 +86,8 @@ def detect_object(img):
     scores, boxes = im_detect(net, img)
     result = None
     for cls_idx, cls in enumerate(config.LABELS):
-        cls_idx += 1 # because we skipped background
-        cls_boxes = boxes[:, 4 * cls_idx : 4 * (cls_idx + 1)]
+        cls_idx += 1  # because we skipped background
+        cls_boxes = boxes[:, 4 * cls_idx: 4 * (cls_idx + 1)]
         cls_scores = scores[:, cls_idx]
 
         # dets: detected results, each line is in [x1, y1, x2, y2, confidence] format
@@ -107,10 +103,9 @@ def detect_object(img):
 
         # now change dets format to [x1, y1, x2, y2, confidence, cls_idx]
         dets = np.hstack((dets, np.ones((dets.shape[0], 1)) * (cls_idx - 1)))
-        # print 'dets: {}'.format(dets)
 
         # visualize detected results
-#        img = zc.vis_detections(img, dets, config.LABELS, thresh = CONF_THRESH)
+        #        img = zc.vis_detections(img, dets, config.LABELS, thresh = CONF_THRESH)
 
         # combine with previous results (for other classes)
         if result is None:
@@ -120,9 +115,11 @@ def detect_object(img):
 
     return (img, result)
 
+
 def process(img, display_list):
     img_object, result = detect_object(img)
-    zc.check_and_display('object', img_object, display_list, wait_time = config.DISPLAY_WAIT_TIME, resize_max = config.DISPLAY_MAX_PIXEL)
+    zc.check_and_display('object', img_object, display_list, wait_time=config.DISPLAY_WAIT_TIME,
+                         resize_max=config.DISPLAY_MAX_PIXEL)
 
-    rtn_msg = {'status' : 'success'}
+    rtn_msg = {'status': 'success'}
     return (rtn_msg, json.dumps(result.tolist()))
