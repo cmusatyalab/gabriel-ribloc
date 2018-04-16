@@ -40,7 +40,7 @@ import ikea_cv
 sys.path.insert(0, "..")
 import zhuocv as zc
 import config
-import Task
+import task
 import time
 from soundpub import SoundPub
 
@@ -86,7 +86,7 @@ class RibLocApp(gabriel.proxy.CognitiveProcessThread):
         self.last_msg=""
         self.dup_msg_cnt=0
         # task initialization
-        self.task = Task.Task(init_state=init_state)
+        self.task = task.Task(init_state=init_state)
         if pubaudio:
             self.sp=SoundPub()
         else:
