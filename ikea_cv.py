@@ -44,7 +44,6 @@ import caffe
 sys.path.insert(0, "..")
 import config
 import zhuocv as zc
-import MyUtils
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 
@@ -82,7 +81,6 @@ print 'caffe net has been initilized'
 
 
 # img will be modified in this function
-#@MyUtils.timeit
 def detect_object(img):
     global net
     caffe.set_mode_gpu()
