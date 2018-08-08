@@ -48,6 +48,7 @@ RUN pip install easydict && \
 # must be this version of numpy, or it will crash: https://github.com/rbgirshick/py-faster-rcnn/issues/480; no need for this anymore?
 RUN pip install -Iv numpy==1.11.1
 RUN pip install -U python-dateutil
+RUN pip install zmq
 
 # compile py-faster-rcnn
 WORKDIR /py-faster-rcnn
