@@ -64,7 +64,7 @@ RUN cd caffe-fast-rcnn && \
     make -j$(nproc) pycaffe
 
 # download/extract model for ribloc
-WORKDIR /gabriel-ribloc/model
+WORKDIR /gabriel-ribloc
 RUN wget https://owncloud.cmusatyalab.org/owncloud/index.php/s/PelpSXHOnDohai4/download -O ribloc.tar.gz
 RUN tar -xvzf ribloc.tar.gz
 
