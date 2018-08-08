@@ -27,8 +27,9 @@ import os
 import pprint
 import struct
 import sys
+import json
 from optparse import OptionParser
-
+from base64 import b64encode
 import Queue
 
 if os.path.isdir("../../gabriel/server"):
@@ -128,11 +129,13 @@ class RibLocApp(gabriel.proxy.CognitiveProcessThread):
         LOG.info("processing: ")
         LOG.info("%s\n" % header)
 
+        rtn_data = {}
+
         if self.first_n_cnt < 10:
             header['status'] = 'success'
-            rtn_data = self.gen_output(header, None, None)
+            # rtn_data = self.gen_output(header, None, None)
             self.first_n_cnt += 1
-            return rtn_data
+            return json.dumps(rtn_data)
 
         ## preprocessing of input image
         img = zc.raw2cv_image(data)
@@ -154,12 +157,16 @@ class RibLocApp(gabriel.proxy.CognitiveProcessThread):
                 print('duplicate speech')
                 self.dup_msg_cnt += 1
                 if self.dup_msg_cnt < 100:
-                    return self.gen_output(header, None, None)
+                    return json.dumps(rtn_data)
                 else:
                     self.dup_msg_cnt = 0
             self.last_msg = instruction['speech']
 
-        rtn_data = self.gen_output(header, instruction['image'], instruction['speech'])
+        #rtn_data = self.gen_output(header, instruction['image'], instruction['speech'])
+        if instruction.get('image', None) is not None:
+            rtn_data['image'] = b64encode(zc.cv_image2raw(instruction['image']))
+        if instruction.get('speech', None) is not None:
+            rtn_data['speech'] = instruction['speech']
 
         # debug, display
         #        zc.check_and_display('input', img, display_list, resize_max = config.DISPLAY_MAX_PIXEL, wait_time =
@@ -169,18 +176,18 @@ class RibLocApp(gabriel.proxy.CognitiveProcessThread):
         if config.VISUALIZE_ALL:
             vis_objects = objects
         img_object = zc.vis_detections(img, vis_objects, config.LABELS)
-        zc.check_and_display("object", img_object,
-                             display_list,
-                             resize_max=config.DISPLAY_MAX_PIXEL,
-                             wait_time=config.DISPLAY_WAIT_TIME)
-        if instruction['image'] is not None:
-            zc.check_and_display("instruction", instruction['image'],
-                                 display_list,
-                                 resize_max=config.DISPLAY_MAX_PIXEL,
-                                 wait_time=config.DISPLAY_WAIT_TIME)
+        #zc.check_and_display("object", img_object,
+        #                     display_list,
+        #                     resize_max=config.DISPLAY_MAX_PIXEL,
+        #                     wait_time=config.DISPLAY_WAIT_TIME)
+        #if instruction['image'] is not None:
+        #   zc.check_and_display("instruction", instruction['image'],
+        #                         display_list,
+        #                         resize_max=config.DISPLAY_MAX_PIXEL,
+        #                         wait_time=config.DISPLAY_WAIT_TIME)
         if instruction['speech'] is not None and self.sp is not None:
             self.sp.pub(instruction['speech'])
-        return rtn_data
+        return json.dumps(rtn_data)
 
 
 if __name__ == "__main__":
