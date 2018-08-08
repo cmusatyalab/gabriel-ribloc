@@ -64,10 +64,10 @@ RUN cd caffe-fast-rcnn && \
     make -j$(nproc) pycaffe
 
 # download/extract model for ribloc
-WORKDIR /ribloc/model
+WORKDIR /gabriel-ribloc/model
 RUN wget https://owncloud.cmusatyalab.org/owncloud/index.php/s/PelpSXHOnDohai4/download -O ribloc.tar.gz
 RUN tar -xvzf ribloc.tar.gz
 
 
 EXPOSE 7070 9098 9111
-CMD ["bash", "-c", "gabriel-control -n eth0 -l & sleep 5; gabriel-ucomm -s 127.0.0.1:8021 & sleep 5; cd /ribloc && ./ribloc -p"]
+CMD ["bash", "-c", "gabriel-control -n eth0 -l & sleep 5; gabriel-ucomm -s 127.0.0.1:8021 & sleep 5; cd /gabriel-ribloc && ./ribloc -p"]
