@@ -22,29 +22,24 @@
 
 from __future__ import print_function
 
+import json
 import multiprocessing
 import os
 import pprint
+import Queue
 import struct
 import sys
-import json
-from optparse import OptionParser
+import time
 from base64 import b64encode
-import Queue
+from optparse import OptionParser
 
-if os.path.isdir("../../gabriel/server"):
-    sys.path.insert(0, "../../gabriel/server")
+import caffe_detect
+import config
+import cv2
 import gabriel
 import gabriel.proxy
-import cv2
-import ikea_cv
-
-sys.path.insert(0, "..")
-import zhuocv as zc
-import config
 import task
-import time
-from soundpub import SoundPub
+import util
 
 LOG = gabriel.logging.getLogger(__name__)
 ANDROID_CLIENT = True
@@ -82,18 +77,14 @@ def process_command_line(argv):
 
 class RibLocApp(gabriel.proxy.CognitiveProcessThread):
 
-    def __init__(self, image_queue, output_queue, engine_id, init_state=None, pubaudio=False):
-        super(self.__class__, self).__init__(image_queue, output_queue, engine_id)
+    def __init__(self, image_queue, output_queue, engine_id, init_state=None):
+        super(RibLocApp, self).__init__(image_queue, output_queue, engine_id)
         self.is_first_image = True
         self.first_n_cnt = 0
         self.last_msg = ""
         self.dup_msg_cnt = 0
         # task initialization
         self.task = task.Task(init_state=init_state)
-        if pubaudio:
-            self.sp = SoundPub()
-        else:
-            self.sp = None
 
     def add_to_byte_array(self, byte_array, extra_bytes):
         return struct.pack("!{}s{}s".format(len(byte_array), len(extra_bytes)), byte_array, extra_bytes)
@@ -138,13 +129,13 @@ class RibLocApp(gabriel.proxy.CognitiveProcessThread):
             return json.dumps(rtn_data)
 
         ## preprocessing of input image
-        img = zc.raw2cv_image(data)
+        img = util.raw2cv_image(data)
         if config.ROTATE_IMAGE:
             img = self.rotate_90(img)
         if config.RESIZE_IMAGE:
             img = cv2.resize(img, (720, 480))
 
-        _, objects = ikea_cv.detect_object(img)
+        _, objects = caffe_detect.detect_object(img)
         LOG.info("object detection result: %s" % objects)
 
         ## get instruction based on state
@@ -162,29 +153,16 @@ class RibLocApp(gabriel.proxy.CognitiveProcessThread):
                     self.dup_msg_cnt = 0
             self.last_msg = instruction['speech']
 
-        #rtn_data = self.gen_output(header, instruction['image'], instruction['speech'])
         if instruction.get('image', None) is not None:
-            rtn_data['image'] = b64encode(zc.cv_image2raw(instruction['image']))
+            rtn_data['image'] = b64encode(util.cv_image2raw(instruction['image']))
         if instruction.get('speech', None) is not None:
             rtn_data['speech'] = instruction['speech']
 
-        # debug, display
-        #        zc.check_and_display('input', img, display_list, resize_max = config.DISPLAY_MAX_PIXEL, wait_time =
-        # config.DISPLAY_WAIT_TIME)
         if len(vis_objects) > 0:
             print('visualizing: {}'.format(vis_objects))
         if config.VISUALIZE_ALL:
             vis_objects = objects
-        img_object = zc.vis_detections(img, vis_objects, config.LABELS)
-        #zc.check_and_display("object", img_object,
-        #                     display_list,
-        #                     resize_max=config.DISPLAY_MAX_PIXEL,
-        #                     wait_time=config.DISPLAY_WAIT_TIME)
-        #if instruction['image'] is not None:
-        #   zc.check_and_display("instruction", instruction['image'],
-        #                         display_list,
-        #                         resize_max=config.DISPLAY_MAX_PIXEL,
-        #                         wait_time=config.DISPLAY_WAIT_TIME)
+        img_object = util.vis_detections(img, vis_objects, config.LABELS)
         if instruction['speech'] is not None and self.sp is not None:
             self.sp.pub(instruction['speech'])
         return json.dumps(rtn_data)
@@ -211,8 +189,7 @@ if __name__ == "__main__":
     video_receive_client = gabriel.proxy.SensorReceiveClient((video_ip, video_port), image_queue)
     video_receive_client.start()
     video_receive_client.isDaemon = True
-    ribloc_app = RibLocApp(image_queue, result_queue, engine_id='ribLoc', init_state=settings.init_state,
-                           pubaudio=settings.pubaudio)
+    ribloc_app = RibLocApp(image_queue, result_queue, engine_id='ribLoc', init_state=settings.init_state)
     ribloc_app.start()
     ribloc_app.isDaemon = True
 
