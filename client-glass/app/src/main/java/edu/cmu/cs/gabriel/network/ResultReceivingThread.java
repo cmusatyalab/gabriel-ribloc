@@ -5,7 +5,6 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -24,7 +23,9 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Base64;
 import android.util.Log;
+
 import edu.cmu.cs.gabriel.token.ReceivedPacketInfo;
+
 
 public class ResultReceivingThread extends Thread {
 
@@ -34,6 +35,7 @@ public class ResultReceivingThread extends Thread {
 
     // TCP connection
     private InetAddress remoteIP;
+    private String serverAddress;
     private int remotePort;
     private Socket tcpSocket;
     private DataOutputStream networkWriter;
@@ -43,20 +45,16 @@ public class ResultReceivingThread extends Thread {
 
     // animation
     private Timer timer = null;
-    private Bitmap[] animationFrames = new Bitmap[2];
-    private int[] animationPeriods = new int[2]; // how long each frame is shown, in millisecond
+    private Bitmap[] animationFrames = new Bitmap[10];
+    private int[] animationPeriods = new int[10]; // how long each frame is shown, in millisecond
     private int animationDisplayIdx = -1;
     private int nAnimationFrames = -1;
 
-    
+
     public ResultReceivingThread(String serverIP, int port, Handler returnMsgHandler) {
         isRunning = false;
         this.returnMsgHandler = returnMsgHandler;
-        try {
-            remoteIP = InetAddress.getByName(serverIP);
-        } catch (UnknownHostException e) {
-            Log.e(LOG_TAG, "unknown host: " + e.getMessage());
-        }
+        serverAddress = serverIP;
         remotePort = port;
     }
 
@@ -64,7 +62,11 @@ public class ResultReceivingThread extends Thread {
     public void run() {
         this.isRunning = true;
         Log.i(LOG_TAG, "Result receiving thread running");
-
+        try {
+            remoteIP = InetAddress.getByName(serverAddress);
+        } catch (UnknownHostException e) {
+            Log.e(LOG_TAG, "unknown host: " + e.getMessage());
+        }
         try {
             tcpSocket = new Socket();
             tcpSocket.setTcpNoDelay(true);
@@ -95,13 +97,6 @@ public class ResultReceivingThread extends Thread {
      */
     private String receiveMsg(DataInputStream reader) throws IOException {
         int retLength = reader.readInt();
-        byte[] recvByte=receiveNBytes(reader, retLength);
-        String receivedString = new String(recvByte);
-        return receivedString;
-    }
-
-
-    private byte[] receiveNBytes(DataInputStream reader, int retLength) throws IOException {
         byte[] recvByte = new byte[retLength];
         int readSize = 0;
         while(readSize < retLength){
@@ -111,103 +106,135 @@ public class ResultReceivingThread extends Thread {
             }
             readSize += ret;
         }
-        return recvByte;
+        String receivedString = new String(recvByte);
+        return receivedString;
     }
 
-
-    private byte[] parseReceivedDataByType(JSONObject header, byte[] data, String type) throws JSONException {
-        if (header.has(type)){
-            JSONArray dataInfo=header.getJSONArray(type);
-            int dataOffset=dataInfo.getInt(0);
-            int dataSize=dataInfo.getInt(1);
-//            Log.d(LOG_TAG, "offset: " + dataOffset + " size: " + dataSize);
-            byte[] ret= Arrays.copyOfRange(data, dataOffset, dataOffset+dataSize);
-            return ret;
-        }
-        return null;
-    }
 
     private void notifyReceivedData(String recvData) {
         // convert the message to JSON
+        String status = null;
         String result = null;
+        String sensorType = null;
         long frameID = -1;
         String engineID = "";
-        String status="";
         int injectedToken = 0;
-        int dataSize=-1;
-        Bitmap imageFeedback = null;
 
         try {
             JSONObject recvJSON = new JSONObject(recvData);
+            status = recvJSON.getString("status");
+            result = recvJSON.getString(NetworkProtocol.HEADER_MESSAGE_RESULT);
+            sensorType = recvJSON.getString(NetworkProtocol.SENSOR_TYPE_KEY);
             frameID = recvJSON.getLong(NetworkProtocol.HEADER_MESSAGE_FRAME_ID);
             engineID = recvJSON.getString(NetworkProtocol.HEADER_MESSAGE_ENGINE_ID);
-            status=recvJSON.getString(NetworkProtocol.HEADER_MESSAGE_STATUS);
-            dataSize=recvJSON.getInt(NetworkProtocol.HEADER_MESSAGE_DATA_SIZE);
+            //injectedToken = recvJSON.getInt(NetworkProtocol.HEADER_MESSAGE_INJECT_TOKEN);
+        } catch (JSONException e) {
+            Log.e(LOG_TAG, recvData);
+            Log.e(LOG_TAG, "the return message has no status field");
+            return;
+        }
 
+
+        // return status
+        if (sensorType.equals(NetworkProtocol.SENSOR_JPEG)) {
             Message msg = Message.obtain();
             msg.what = NetworkProtocol.NETWORK_RET_MESSAGE;
             msg.obj = new ReceivedPacketInfo(frameID, engineID, status);
             this.returnMsgHandler.sendMessage(msg);
+        }
 
-            byte[] data = receiveNBytes(networkReader, dataSize);
+        if (!status.equals("success")) {
+            if (sensorType.equals(NetworkProtocol.SENSOR_JPEG)) {
+                Message msg = Message.obtain();
+                msg.what = NetworkProtocol.NETWORK_RET_DONE;
+                this.returnMsgHandler.sendMessage(msg);
+            }
+            return;
+        }
+
+        // TODO: refilling tokens
+//        if (injectedToken > 0){
+//            this.tokenController.increaseTokens(injectedToken);
+//        }
+
+        if (result != null){
+            /* parsing result */
+            JSONObject resultJSON = null;
+            try {
+                resultJSON = new JSONObject(result);
+            } catch (JSONException e) {
+                Log.e(LOG_TAG, "Result message not in correct JSON format");
+            }
+
+            String speechFeedback = "";
+            Bitmap imageFeedback = null;
+
+
             // image guidance
-            byte[] imageData=parseReceivedDataByType(recvJSON, data, NetworkProtocol.HEADER_MESSAGE_IMAGE);
-            if (imageData!=null){
-                imageFeedback = BitmapFactory.decodeByteArray(imageData, 0, imageData.length);
-                msg = Message.obtain();
+            try {
+                String imageFeedbackString = resultJSON.getString("image");
+                byte[] data = Base64.decode(imageFeedbackString.getBytes(), Base64.DEFAULT);
+                imageFeedback = BitmapFactory.decodeByteArray(data,0,data.length);
+
+                Message msg = Message.obtain();
                 msg.what = NetworkProtocol.NETWORK_RET_IMAGE;
                 msg.obj = imageFeedback;
                 this.returnMsgHandler.sendMessage(msg);
+            } catch (JSONException e) {
+                Log.v(LOG_TAG, "no image guidance found");
+            }
+
+            // video guidance
+            try {
+                String videoURL = resultJSON.getString("video");
+                Message msg = Message.obtain();
+                msg.what = NetworkProtocol.NETWORK_RET_VIDEO;
+                msg.obj = videoURL;
+                this.returnMsgHandler.sendMessage(msg);
+            } catch (JSONException e) {
+                Log.v(LOG_TAG, "no video guidance found");
             }
 
             // animation guidance
-            byte[] animData=parseReceivedDataByType(recvJSON, data, NetworkProtocol.HEADER_MESSAGE_ANIMATION);
-            if (animData!=null){
-                DataInputStream dis = new DataInputStream(new ByteArrayInputStream(animData));
-                nAnimationFrames = dis.readInt();
+            try {
+                JSONArray animationArray = resultJSON.getJSONArray("animation");
+                nAnimationFrames = animationArray.length();
                 for (int i = 0; i < nAnimationFrames; i++) {
-                    int frameSize=dis.readInt();
-                    byte[] frameData=new byte[frameSize];
-                    int numBytes=dis.read(frameData);
-                    if (numBytes!=frameSize){
-                        Log.d(LOG_TAG, "failed to read in the whole image");
-                    }
-                    animationFrames[i] = BitmapFactory.decodeByteArray(frameData,0,frameData.length);
-                    //length current is arbitrary
-                    animationPeriods[i] = 100;
+                    JSONArray frameArray = animationArray.getJSONArray(i);
+                    String animationFrameString = frameArray.getString(0);
+                    byte[] data = Base64.decode(animationFrameString.getBytes(), Base64.DEFAULT);
+                    animationFrames[i] = BitmapFactory.decodeByteArray(data,0,data.length);
+                    animationPeriods[i] = frameArray.getInt(1);
                 }
                 animationDisplayIdx = -1;
                 if (timer == null) {
                     timer = new Timer();
                     timer.schedule(new animationTask(), 0);
                 }
+            } catch (JSONException e) {
+                Log.v(LOG_TAG, "no animation guidance found");
             }
 
-
-            byte[] speechData=parseReceivedDataByType(recvJSON, data, NetworkProtocol.HEADER_MESSAGE_SPEECH);
-            if (speechData!=null) {
-                String speechFeedback = new String(speechData);
-                msg = Message.obtain();
+            // speech guidance
+            try {
+                speechFeedback = resultJSON.getString("speech");
+                Message msg = Message.obtain();
                 msg.what = NetworkProtocol.NETWORK_RET_SPEECH;
                 msg.obj = speechFeedback;
-                Log.d(LOG_TAG, "speech guidance: " +speechFeedback);
-                //uncomment to let tts speek
+                this.returnMsgHandler.sendMessage(msg);
+            } catch (JSONException e) {
+                Log.v(LOG_TAG, "no speech guidance found");
+            }
+
+            // done processing return message
+            if (sensorType.equals(NetworkProtocol.SENSOR_JPEG)) {
+                Message msg = Message.obtain();
+                msg.what = NetworkProtocol.NETWORK_RET_DONE;
                 this.returnMsgHandler.sendMessage(msg);
             }
-        } catch (JSONException e) {
-            Log.e(LOG_TAG, "returned json parsed incorrectly!");
-            e.printStackTrace();
-        } catch (IOException e) {
-            Log.e(LOG_TAG, "received packet data error");
-            e.printStackTrace();
-        } finally {
-            // done processing return message
-            Message msg = Message.obtain();
-            msg.what = NetworkProtocol.NETWORK_RET_DONE;
-            this.returnMsgHandler.sendMessage(msg);
         }
     }
-    
+
     private class animationTask extends TimerTask {
         @Override
         public void run() {
@@ -217,12 +244,18 @@ public class ResultReceivingThread extends Thread {
             msg.what = NetworkProtocol.NETWORK_RET_ANIMATION;
             msg.obj = animationFrames[animationDisplayIdx];
             returnMsgHandler.sendMessage(msg);
-            timer.schedule(new animationTask(), animationPeriods[animationDisplayIdx]);
+            if (isRunning)
+                timer.schedule(new animationTask(), animationPeriods[animationDisplayIdx]);
         }
     };
 
     public void close() {
         this.isRunning = false;
+
+        if (timer != null) {
+            timer.cancel();
+            timer = null;
+        }
 
         try {
             if(this.networkReader != null){
@@ -248,7 +281,7 @@ public class ResultReceivingThread extends Thread {
         } catch (IOException e) {
         }
     }
-    
+
     /**
      * Notifies error to the main thread
      */
