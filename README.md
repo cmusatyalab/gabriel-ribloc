@@ -12,6 +12,8 @@ the video frames to recognize user states and provides feedback.
   * ribloc: the main executable
   * task.py: the procedures of the workflow
   * ikea_cv.py: provides an interface to detect objects in the current frame using Faster-RCNN
+  * [client-phone](client-phone): phone client.
+  * [client-glass](client-glass): glass client.
 
 # How to Run
 
@@ -23,3 +25,13 @@ nvidia-docker run --rm -it --name sandwich \
 -p 0.0.0.0:8080:8080 -p 0.0.0.0:7070:7070 \
 cmusatyalab/gabriel-ribloc:latest
 ```
+
+## Client
+
+Use Android Studio to compile and install [client-phone](client-phone) or [client-glass](client-glass).
+
+# Note
+
+RibLoc's server requires gabriel legacy mode. RibLoc's client has extra speech recognition support that is not in the mainstream gabriel client. RibLoc's client diverges from gabriel main client and is behind the mainstream development.
+
+
