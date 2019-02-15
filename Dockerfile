@@ -48,7 +48,6 @@ RUN pip install easydict && \
 # must be this version of numpy, or it will crash: https://github.com/rbgirshick/py-faster-rcnn/issues/480; no need for this anymore?
 RUN pip install -Iv numpy==1.11.1
 RUN pip install -U python-dateutil
-RUN pip install zmq
 
 # compile py-faster-rcnn
 WORKDIR /py-faster-rcnn
@@ -71,4 +70,4 @@ RUN tar -xvzf ribloc.tar.gz
 
 
 EXPOSE 7070 9098 9111
-CMD ["bash", "-c", "gabriel-control -n eth0 -l & sleep 5; gabriel-ucomm -s 127.0.0.1:8021 & sleep 5; cd /gabriel-ribloc && ./ribloc -p"]
+CMD ["bash", "-c", "gabriel-control -n eth0 -l -d & sleep 5; gabriel-ucomm -s 127.0.0.1:8021 & sleep 5; cd /gabriel-ribloc && ./ribloc -p"]
