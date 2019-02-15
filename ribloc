@@ -61,10 +61,6 @@ def process_command_line(argv):
         '-i', '--state', action='store', dest='init_state',
         default=None,
         help="initial state")
-    parser.add_option(
-        '-p', action='store_true', dest='pubaudio',
-        default=False,
-        help="whetehr ribloc should publish instruction audio")
     settings, args = parser.parse_args(argv)
     if len(args) >= 1:
         parser.error("invalid arguement")
