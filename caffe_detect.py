@@ -41,9 +41,7 @@ from fast_rcnn.nms_wrapper import nms
 sys.path.append(os.path.join(faster_rcnn_root, "python"))
 import caffe
 
-sys.path.insert(0, "..")
 import config
-import zhuocv as zc
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 
@@ -119,8 +117,5 @@ def detect_object(img):
 
 def process(img, display_list):
     img_object, result = detect_object(img)
-    zc.check_and_display('object', img_object, display_list, wait_time=config.DISPLAY_WAIT_TIME,
-                         resize_max=config.DISPLAY_MAX_PIXEL)
-
     rtn_msg = {'status': 'success'}
     return (rtn_msg, json.dumps(result.tolist()))

@@ -163,8 +163,6 @@ class RibLocApp(gabriel.proxy.CognitiveProcessThread):
         if config.VISUALIZE_ALL:
             vis_objects = objects
         img_object = util.vis_detections(img, vis_objects, config.LABELS)
-        if instruction['speech'] is not None and self.sp is not None:
-            self.sp.pub(instruction['speech'])
         return json.dumps(rtn_data)
 
 
