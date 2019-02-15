@@ -25,10 +25,10 @@ public class Const {
     // port protocol to the server
     public static final int VIDEO_STREAM_PORT = 9098;
     public static final int ACC_STREAM_PORT = 9099;
-    public static final int RESULT_RECEIVING_PORT = 9101;
+    public static final int RESULT_RECEIVING_PORT = 9111;
 
     // load images (JPEG) from files and pretend they are just captured by the camera
-    public static final String APP_NAME = "pingpong";
+    public static final String APP_NAME = "ribloc";
     public static final File TEST_IMAGE_DIR = new File (ROOT_DIR.getAbsolutePath() +
             File.separator + "images-" + APP_NAME + File.separator);
 

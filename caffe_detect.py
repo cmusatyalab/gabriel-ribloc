@@ -40,7 +40,6 @@ from fast_rcnn.nms_wrapper import nms
 
 sys.path.append(os.path.join(faster_rcnn_root, "python"))
 import caffe
-
 import config
 
 current_milli_time = lambda: int(round(time.time() * 1000))

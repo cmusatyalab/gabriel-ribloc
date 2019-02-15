@@ -70,4 +70,4 @@ RUN tar -xvzf ribloc.tar.gz
 
 
 EXPOSE 7070 9098 9111
-CMD ["bash", "-c", "gabriel-control -n eth0 -l -d & sleep 5; gabriel-ucomm -s 127.0.0.1:8021 & sleep 5; cd /gabriel-ribloc && ./ribloc -p"]
+CMD ["bash", "-c", "gabriel-control -n eth0 -l -d & sleep 5; gabriel-ucomm -s 127.0.0.1:8021 & sleep 5; cd /gabriel-ribloc && ./ribloc"]
