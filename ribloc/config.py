@@ -19,6 +19,9 @@
 #   limitations under the License.
 #
 
+import os
+ENGINE_NAME = 'instruction'
+
 # If True, configurations are set to process video stream in real-time (use with proxy.py)
 # If False, configurations are set to process one independent image (use with img.py)
 IS_STREAMING = True
@@ -37,7 +40,7 @@ USE_GPU = True
 SAVE_IMAGE = False
 
 # Max image width and height
-IMAGE_MAX_WH = 640
+IMAGE_MAX_WH = 720
 
 # Display
 DISPLAY_MAX_PIXEL = 640
@@ -54,7 +57,12 @@ ROTATE_IMAGE = False
 RESIZE_IMAGE = False
 VISUALIZE_ALL = False
 
-with open('model/labels.txt', 'r') as f:
+# model related info
+cur_dir = os.path.dirname(os.path.realpath(__file__))
+PROTOTXT = os.path.join(cur_dir, 'model/faster_rcnn_test.pt')
+CAFFEMODEL = os.path.join(cur_dir, 'model/model_iter_20000.caffemodel')
+LABELFILE = os.path.join(cur_dir, 'model/labels.txt')
+with open(LABELFILE, 'r') as f:
     content = f.read().splitlines()
     LABELS = content
 

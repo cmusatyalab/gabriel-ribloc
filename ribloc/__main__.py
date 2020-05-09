@@ -18,16 +18,15 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-
 import fire
 from gabriel_server.local_engine import runner
-from ribloc import RiblocEngine
-from instructions import ENGINE_NAME
-import argparse
+
+from ribloc import ENGINE_NAME, RiblocEngine
 
 DEFAULT_PORT = 9099
 DEFAULT_NUM_TOKENS = 2
 INPUT_QUEUE_MAX_SIZE = 60
+
 
 def main(tokens=DEFAULT_NUM_TOKENS, port=DEFAULT_PORT, use_gpu=True):
     def engine_setup():

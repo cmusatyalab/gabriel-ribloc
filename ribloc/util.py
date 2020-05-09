@@ -23,8 +23,6 @@
 '''
 This is a simple library file for common CV tasks
 '''
-from __future__ import absolute_import, division, print_function
-
 import cv2
 import numpy as np
 
