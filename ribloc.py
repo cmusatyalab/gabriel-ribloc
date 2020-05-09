@@ -20,61 +20,90 @@
 #   limitations under the License.
 #
 
-from __future__ import print_function
-
-import json
-import multiprocessing
-import os
-import pprint
-import Queue
-import struct
+import numpy as np
+import logging
+from gabriel_server import cognitive_engine
+from gabriel_protocol import gabriel_pb2
+from .object_detect import FasterRCNNOpenCVDetector
+import instruction_pb2
+import instructions
 import sys
-import time
-from base64 import b64encode
-from optparse import OptionParser
-
-import caffe_detect
-import config
+import os
 import cv2
-import gabriel
-import gabriel.proxy
-import task
-import util
 
-LOG = gabriel.logging.getLogger(__name__)
-ANDROID_CLIENT = True
-config.setup(is_streaming=True)
-display_list = config.DISPLAY_LIST_TASK
+# Max image width and height
+IMAGE_MAX_WH = 720
+PROTOTXT = 'model/faster_rcnn_test.pt'
+CAFFEMODEL = 'model/model.caffemodel'
 
+def _get_labels():
+    with open('model/labels.txt', 'r') as f:
+        content = f.read().splitlines()
+        return content
 
-def process_command_line(argv):
-    VERSION = 'gabriel proxy : %s' % gabriel.Const.VERSION
-    DESCRIPTION = "Gabriel cognitive assistance"
+class RiblocEngine(cognitive_engine.Engine):
+    def __init__(self, cpu_only):
+        super().__init__()
+        self.detector = FasterRCNNOpenCVDetector(
+            proto_path = PROTOTXT,
+            model_path = CAFFEMODEL,
+            labels = _get_labels(),
+            gpu = not cpu_only
+        )
 
-    parser = OptionParser(usage='%prog [option]', version=VERSION,
-                          description=DESCRIPTION)
+    def handle(self, from_client):
+        if from_client.payload_type != gabriel_pb2.PayloadType.IMAGE:
+            return cognitive_engine.wrong_input_format_error(
+                from_client.frame_id)
 
-    parser.add_option(
-        '-s', '--address', action='store', dest='address',
-        help="(IP address:port number) of directory server")
-    parser.add_option(
-        '-i', '--state', action='store', dest='init_state',
-        default=None,
-        help="initial state")
-    settings, args = parser.parse_args(argv)
-    if len(args) >= 1:
-        parser.error("invalid arguement")
+        engine_fields = cognitive_engine.unpack_engine_fields(
+            instruction_pb2.EngineFields, from_client)
 
-    if hasattr(settings, 'address') and settings.address is not None:
-        if settings.address.find(":") == -1:
-            parser.error("Need address and port. Ex) 10.0.0.1:8081")
-    return settings, args
+        img_array = np.asarray(bytearray(from_client.payload), dtype=np.int8)
+        img = cv2.imdecode(img_array, -1)
 
+        objects = []
+        if max(img.shape) > IMAGE_MAX_WH:
+            resize_ratio = float(IMAGE_MAX_WH) / max(img.shape[0], img.shape[1])
+            img = cv2.resize(img, (0, 0), fx=resize_ratio, fy=resize_ratio,
+                             interpolation=cv2.INTER_AREA)
+            objects = self.detector.detect(img)
+            if objects is not None:
+                objects[:, :4] /= resize_ratio
+        else:
+            objects = self.detector.detect(img)
+        logger.info("object detection result: %s", objects)
 
-class RibLocApp(gabriel.proxy.CognitiveProcessThread):
+        # obtain client headers
+        headers = {}
+        vis_objects, instruction = self.task.get_instruction(objects, headers)
+
+        # return results
+        engine_fields.update_count += 1
+        result_wrapper = gabriel_pb2.ResultWrapper()
+        result_wrapper.engine_fields.Pack(engine_fields)
+
+        result = gabriel_pb2.ResultWrapper.Result()
+        result.payload_type = gabriel_pb2.PayloadType.IMAGE
+        result.engine_name = ENGINE_NAME
+        with open(image_path, 'rb') as f:
+            result.payload = f.read()
+        result_wrapper.results.append(result)
+
+        result = gabriel_pb2.ResultWrapper.Result()
+        result.payload_type = gabriel_pb2.PayloadType.TEXT
+        result.engine_name = ENGINE_NAME
+        result.payload = instruction.encode(encoding="utf-8")
+        result_wrapper.results.append(result)
+
+        result_wrapper.status = gabriel_pb2.ResultWrapper.Status.SUCCESS
+
+        return result_wrapper
+
+class RiblocEngineOld(gabriel.proxy.CognitiveProcessThread):
 
     def __init__(self, image_queue, output_queue, engine_id, init_state=None):
-        super(RibLocApp, self).__init__(image_queue, output_queue, engine_id)
+        super().__init__(image_queue, output_queue, engine_id)
         self.is_first_image = True
         self.first_n_cnt = 0
         self.last_msg = ""
@@ -160,48 +189,3 @@ class RibLocApp(gabriel.proxy.CognitiveProcessThread):
             vis_objects = objects
         img_object = util.vis_detections(img, vis_objects, config.LABELS)
         return json.dumps(rtn_data)
-
-
-if __name__ == "__main__":
-    result_queue = multiprocessing.Queue()
-    print(result_queue._reader)
-
-    settings, args = process_command_line(sys.argv[1:])
-    ip_addr, port = gabriel.network.get_registry_server_address(settings.address)
-    service_list = gabriel.network.get_service_list(ip_addr, port)
-    LOG.info("Gabriel Server :")
-    LOG.info(pprint.pformat(service_list))
-
-    video_ip = service_list.get(gabriel.ServiceMeta.VIDEO_TCP_STREAMING_IP)
-    video_port = service_list.get(gabriel.ServiceMeta.VIDEO_TCP_STREAMING_PORT)
-    ucomm_ip = service_list.get(gabriel.ServiceMeta.UCOMM_SERVER_IP)
-    ucomm_port = service_list.get(gabriel.ServiceMeta.UCOMM_SERVER_PORT)
-
-    # image receiving and processing threads
-    image_queue = Queue.Queue(gabriel.Const.APP_LEVEL_TOKEN_SIZE)
-    print("TOKEN SIZE OF OFFLOADING ENGINE: %d" % gabriel.Const.APP_LEVEL_TOKEN_SIZE)
-    video_receive_client = gabriel.proxy.SensorReceiveClient((video_ip, video_port), image_queue)
-    video_receive_client.start()
-    video_receive_client.isDaemon = True
-    ribloc_app = RibLocApp(image_queue, result_queue, engine_id='ribLoc', init_state=settings.init_state)
-    ribloc_app.start()
-    ribloc_app.isDaemon = True
-
-    # result publish
-    result_pub = gabriel.proxy.ResultPublishClient((ucomm_ip, ucomm_port), result_queue)
-    result_pub.start()
-    result_pub.isDaemon = True
-
-    try:
-        while True:
-            time.sleep(1)
-    except Exception as e:
-        pass
-    except KeyboardInterrupt as e:
-        sys.stdout.write("user exits\n")
-    finally:
-        if video_receive_client is not None:
-            video_receive_client.terminate()
-        if ribloc_app is not None:
-            ribloc_app.terminate()
-        result_pub.terminate()
