@@ -30,7 +30,7 @@ from gabriel_protocol import gabriel_pb2
 from gabriel_server import cognitive_engine
 from logzero import logger
 
-from . import config, instruction_pb2, util
+from . import config, instruction_pb2, util, task
 from .object_detect import FasterRCNNOpenCVDetector
 
 
@@ -43,21 +43,23 @@ class RiblocEngine(cognitive_engine.Engine):
             labels=config.LABELS,
             gpu=not cpu_only
         )
+        self.task = task.Task()
 
     def _serialize_to_pb(self, headers, instruction, engine_fields):
         engine_fields.update_count += 1
-        engine_fields.clear_color = headers['clear_color']
+        if 'clear_color' in headers:
+            engine_fields.ribloc.clear_color = headers['clear_color']
         result_wrapper = gabriel_pb2.ResultWrapper()
         result_wrapper.engine_fields.Pack(engine_fields)
 
-        if instruction['image']:
+        if 'image' in instruction and instruction['image'] is not None:
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.IMAGE
             result.engine_name = config.ENGINE_NAME
             result.payload = util.cv_image2raw(instruction['image'])
             result_wrapper.results.append(result)
 
-        if instruction['speech']:
+        if 'speech' in instruction and instruction['speech'] is not None:
             result = gabriel_pb2.ResultWrapper.Result()
             result.payload_type = gabriel_pb2.PayloadType.TEXT
             result.engine_name = config.ENGINE_NAME
@@ -91,10 +93,11 @@ class RiblocEngine(cognitive_engine.Engine):
         logger.info("object detection result: %s", objects)
 
         # obtain client headers
-        headers = {
-            'gaugeColor': engine_fields.state.gauge_color,
-            'clear_color': engine_fields.state.clear_color
-        }
-        vis_objects, instruction = self.task.get_instruction(objects, headers)
+        headers = {}
+        if engine_fields.ribloc.gauge_color:
+            headers['gaugeColor'] = str(engine_fields.ribloc.gauge_color)
+            logger.debug("received gaugeColor to be: %s", headers['gaugeColor'])
+        vis_objects, instruction = self.task.get_instruction(objects, header=headers)
         result_wrapper = self._serialize_to_pb(headers, instruction, engine_fields)
+        logger.info("result_wrapper: {}".format(result_wrapper))
         return result_wrapper

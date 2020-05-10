@@ -59,7 +59,7 @@ VISUALIZE_ALL = False
 
 # model related info
 cur_dir = os.path.dirname(os.path.realpath(__file__))
-PROTOTXT = os.path.join(cur_dir, 'model/faster_rcnn_test.pt')
+PROTOTXT = os.path.join(cur_dir, 'model/faster_rcnn_test_opencv.pt')
 CAFFEMODEL = os.path.join(cur_dir, 'model/model_iter_20000.caffemodel')
 LABELFILE = os.path.join(cur_dir, 'model/labels.txt')
 with open(LABELFILE, 'r') as f:

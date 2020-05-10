@@ -24,7 +24,7 @@ from gabriel_server.local_engine import runner
 from ribloc import ENGINE_NAME, RiblocEngine
 
 DEFAULT_PORT = 9099
-DEFAULT_NUM_TOKENS = 2
+DEFAULT_NUM_TOKENS = 1
 INPUT_QUEUE_MAX_SIZE = 60
 
 

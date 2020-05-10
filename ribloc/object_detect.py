@@ -4,6 +4,7 @@ Using OpenCV's DNN module for FasterRCNN inference.
 """
 
 import cv2
+import numpy as np
 from logzero import logger
 
 
@@ -106,4 +107,4 @@ class FasterRCNNOpenCVDetector:
             results.append([left, top, left+width, top+height, confidence, classId])
 
         logger.debug('results: {}'.format(results))
-        return results
+        return np.asarray(results)
