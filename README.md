@@ -1,6 +1,6 @@
 # RibLoc Wearable Cognitive Assistance
 
-[![Docker pull status]https://img.shields.io/docker/pulls/cmusatyalab/gabriel-ribloc.svg](https://hub.docker.com/r/cmusatyalab/gabriel-ribloc)
+[![Docker pull status](https://img.shields.io/docker/pulls/cmusatyalab/gabriel-ribloc.svg)](https://hub.docker.com/r/cmusatyalab/gabriel-ribloc)
 
 This cognitive assistant helps train a surgeon to use [RibLoc](https://acuteinnovations.com/product/ribloc/) medical kit for
 fixating broken ribs. It mainly uses Faster-RCNN with VGG to detect objects in
