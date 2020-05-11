@@ -4,34 +4,30 @@ This cognitive assistant helps train a surgeon to use [RibLoc](https://acuteinno
 fixating broken ribs. It mainly uses Faster-RCNN with VGG to detect objects in
 the video frames to recognize user states and provides feedback.
 
-# What's in this repo
+## Demo Videos
 
-  * start_demo.sh: helper script to run the demo
-  * model: a directory containing the DNN's prototxt and model files. The trained models can be downloaded from [here](https://storage.cmusatyalab.org/gabriel-model/ribloc). The md5sum is acc6bc44993f16108b7b8fbe8c291a23.
-  * images_feedback: feedback images to be displayed on the mobile device
-  * ribloc: the main executable
-  * task.py: the procedures of the workflow
-  * ikea_cv.py: provides an interface to detect objects in the current frame using Faster-RCNN
-  * [client-phone](client-phone): phone client.
-  * [client-glass](client-glass): glass client.
+[![Ribloc Demo
+Video](http://img.youtube.com/vi/DANM2W1gVEI/0.jpg)](https://youtu.be/DANM2W1gVEI)
 
-# How to Run
+[![Ribloc Demo Video](http://img.youtube.com/vi/YRTXUty2P1U/0.jpg)](https://youtu.be/YRTXUty2P1U)
 
-## Server
+## What's in this repo
+
+  * [ribloc](ribloc): the core python module for Ribloc Gabriel Server
+    * model: a directory containing the DNN's prototxt and model files. The trained models can be downloaded from [here](https://storage.cmusatyalab.org/gabriel-model/ribloc-model.zip). 
+    * images_feedback: feedback images to be displayed on the mobile device
+  * [android-client](android-client): phone client.
+  * [Dockerfile](Dockerfile): Dockerfile for building the Ribloc server container.
+
+## How to Run
+
+### Server
 
 ```bash
-nvidia-docker run --rm -it --name sandwich \
--p 0.0.0.0:9098:9098 -p 0.0.0.0:9111:9111 -p 0.0.0.0:22222:22222 \
--p 0.0.0.0:8080:8080 -p 0.0.0.0:7070:7070 \
-cmusatyalab/gabriel-ribloc:latest
+docker run -it --rm --gpus all -p 9099:9099 cmusatyalab/gabriel-ribloc:latest
 ```
 
-## Client
+### Client
 
-Use Android Studio to compile and install [client-phone](client-phone) or [client-glass](client-glass).
-
-# Note
-
-RibLoc's server requires gabriel legacy mode. RibLoc's client has extra speech recognition support that is not in the mainstream gabriel client. RibLoc's client diverges from gabriel main client and is behind the mainstream development.
-
-
+Use Android Studio to compile and install [android-client](android-client). Note
+that Google Play Services are needed for speech recognition.

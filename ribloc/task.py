@@ -3,7 +3,7 @@
 # Cloudlet Infrastructure for Mobile Computing
 #   - Task Assistance
 #
-#   Author: Zhuo Chen <zhuoc@cs.cmu.edu>, Junjue Wang <junjuew@cs.cmu.edu>
+#   Author: Junjue Wang <junjuew@cs.cmu.edu>
 #
 #   Copyright (C) 2011-2013 Carnegie Mellon University
 #   Licensed under the Apache License, Version 2.0 (the "License");

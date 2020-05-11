@@ -1,8 +1,6 @@
 FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
 MAINTAINER Satyalab, satya-group@lists.andrew.cmu.edu
 
-ARG DEBIAN_FRONTEND=noninteractive
-
 RUN apt-get update --fix-missing \
     && apt-get upgrade -y \
     && apt-get install -y \

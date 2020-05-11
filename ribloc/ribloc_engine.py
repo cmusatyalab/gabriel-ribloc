@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 #
 # Cloudlet Infrastructure for Mobile Computing
+#   - Task Assistance
 #
-#   Author: Kiryong Ha <krha@cmu.edu>
-#           Zhuo Chen <zhuoc@cs.cmu.edu>
-#           Junjue Wang <junjuew@cs.cmu.edu>
+#   Author: Junjue Wang <junjuew@cs.cmu.edu>
 #
 #   Copyright (C) 2011-2013 Carnegie Mellon University
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +18,6 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #
-
 import os
 import sys
 
